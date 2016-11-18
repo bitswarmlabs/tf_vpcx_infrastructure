@@ -7,24 +7,32 @@ output "vpc_cidr" {
   value = "${aws_vpc.default.cidr_block}"
 }
 
+output "natgw_external_fqdn" {
+  value = "${aws_route53_record.natgw_external.fqdn}"
+}
+
+output "natgw_internal_fqdn" {
+  value = "${aws_route53_record.natgw_vpc.fqdn}"
+}
+
 output "bastion_external_fqdn" {
   value = "${aws_route53_record.bastion-external.fqdn}"
 }
 
 output "bastion_internal_fqdn" {
-  value = "${aws_route53_record.bastion-internal.fqdn}"
+  value = "${aws_route53_record.bastion_internal.fqdn}"
 }
 
 output "puppet_internal_fqdn" {
-  value = "${aws_route53_record.puppet-internal.fqdn}"
+  value = "${aws_route53_record.puppet_internal.fqdn}"
 }
 
 output "rancher_internal_fqdn" {
-  value = "${aws_route53_record.rancher-internal.fqdn}"
+  value = "${aws_route53_record.rancher_internal.fqdn}"
 }
 
 output "jenkins_internal_fqdn" {
-  value = "${aws_route53_record.jenkins-internal.fqdn}"
+  value = "${aws_route53_record.jenkins_internal.fqdn}"
 }
 
 output "bastion_userdata" {

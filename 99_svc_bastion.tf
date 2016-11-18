@@ -75,7 +75,7 @@ resource "aws_eip" "bastion" {
   vpc      = true
 }
 
-resource "aws_route53_record" "bastion-vpc" {
+resource "aws_route53_record" "bastion_vpc" {
   zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "bastion"
   type       = "A"
@@ -84,12 +84,12 @@ resource "aws_route53_record" "bastion-vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-resource "aws_route53_record" "bastion-internal" {
+resource "aws_route53_record" "bastion_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "bastion"
   type       = "CNAME"
   ttl        = "5"
-  records    = [ "${aws_route53_record.bastion-vpc.fqdn}" ]
+  records    = [ "${aws_route53_record.bastion_vpc.fqdn}" ]
   depends_on = [ "aws_route53_zone.internal" ]
 }
 

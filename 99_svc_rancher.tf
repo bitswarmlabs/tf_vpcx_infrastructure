@@ -82,7 +82,7 @@ resource "aws_instance" "rancher" {
   }
 }
 
-resource "aws_route53_record" "rancher-vpc" {
+resource "aws_route53_record" "rancher_vpc" {
   zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "rancher"
   type       = "A"
@@ -91,11 +91,11 @@ resource "aws_route53_record" "rancher-vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-resource "aws_route53_record" "rancher-internal" {
+resource "aws_route53_record" "rancher_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "rancher"
   type       = "CNAME"
   ttl        = "5"
-  records    = [ "${aws_route53_record.rancher-vpc.fqdn}" ]
+  records    = [ "${aws_route53_record.rancher_vpc.fqdn}" ]
   depends_on = [ "aws_route53_zone.internal" ]
 }

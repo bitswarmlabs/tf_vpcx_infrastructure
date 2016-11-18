@@ -66,7 +66,7 @@ resource "aws_instance" "jenkins" {
   }
 }
 
-resource "aws_route53_record" "jenkins-vpc" {
+resource "aws_route53_record" "jenkins_vpc" {
   zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "jenkins"
   type       = "A"
@@ -75,11 +75,11 @@ resource "aws_route53_record" "jenkins-vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-resource "aws_route53_record" "jenkins-internal" {
+resource "aws_route53_record" "jenkins_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "jenkins"
   type       = "CNAME"
   ttl        = "5"
-  records    = [ "${aws_route53_record.jenkins-vpc.fqdn}" ]
+  records    = [ "${aws_route53_record.jenkins_vpc.fqdn}" ]
   depends_on = [ "aws_route53_zone.internal" ]
 }

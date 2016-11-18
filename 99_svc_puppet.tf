@@ -88,7 +88,7 @@ resource "aws_instance" "puppet" {
   }
 }
 
-resource "aws_route53_record" "puppet-vpc" {
+resource "aws_route53_record" "puppet_vpc" {
   zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "puppet"
   type       = "A"
@@ -97,12 +97,12 @@ resource "aws_route53_record" "puppet-vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-resource "aws_route53_record" "puppet-internal" {
+resource "aws_route53_record" "puppet_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "puppet"
   type       = "CNAME"
   ttl        = "5"
-  records    = [ "${aws_route53_record.puppet-vpc.fqdn}" ]
+  records    = [ "${aws_route53_record.puppet_vpc.fqdn}" ]
   depends_on = [ "aws_route53_zone.internal" ]
 }
 

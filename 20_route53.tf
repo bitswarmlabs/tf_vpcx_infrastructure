@@ -23,7 +23,7 @@ resource "aws_route53_zone" "external" {
   }
 }
 
-resource "aws_route53_record" "external-ns" {
+resource "aws_route53_record" "external_ns" {
   name    = "${lookup(var.external_zones, "${var.vpc_environment}.${var.aws_region}")}"
 //  zone_id = "${aws_route53_zone.root.zone_id}"
   zone_id = "${var.route53_root_zone_id}"
