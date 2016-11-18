@@ -24,8 +24,16 @@ variable "vpc_name" {
   description = "Root name of VPC, will also be used for child resources"
 }
 
+variable "vpc_code" {
+  description = "Abbreviated name code prefix for use in constructing Route53 subdomains for this specific VPC"
+}
+
 variable "vpc_environment" {
   description = "VPC operational environment, e.g. development, production.  Used as tag."
+}
+
+variable "vpc_environment_code" {
+  description = "Abbreviated environment code prefix for use in constructing Route53 subdomains"
 }
 
 variable "private_subnet_az" {

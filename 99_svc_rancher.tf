@@ -3,7 +3,7 @@
 */
 resource "aws_iam_role" "rancher" {
   name               = "rancher"
-  path               = "/infrastructure/"
+  path               = "/${var.vpc_code}/"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -30,8 +30,8 @@ data "template_file" "rancher_bootstrap_chunk_01" {
   template = "${file("${path.module}/templates/ubuntu-bootstrap-with-puppet.tpl")}"
 
   vars {
-    hostname = "rancher"
-    domain   = "${aws_route53_zone.infrastructure.name}"
+    hostname     = "rancher"
+    domain       = "${aws_route53_zone.internal_vpc.name}"
   }
 }
 
@@ -82,38 +82,20 @@ resource "aws_instance" "rancher" {
   }
 }
 
-//resource "aws_eip" "rancher" {
-//  instance = "${aws_instance.rancher.id}"
-//  vpc = true
-//}
-
-resource "aws_route53_record" "rancher-internal" {
-  zone_id    = "${aws_route53_zone.infrastructure.zone_id}"
+resource "aws_route53_record" "rancher-vpc" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "rancher"
   type       = "A"
   ttl        = "5"
   records    = [ "${aws_instance.rancher.private_ip}" ]
-  depends_on = [ "aws_route53_zone.infrastructure" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-//resource "aws_route53_record" "rancher-external" {
-//  zone_id = "${aws_route53_zone.external.zone_id}"
-//  name = "rancher"
-//  type = "A"
-//  ttl = "5"
-//  records = [
-//    "${aws_eip.rancher.public_ip}"
-//  ]
-//  depends_on = ["aws_route53_zone.external"]
-//}
-//
-//resource "aws_route53_record" "rancher-cname" {
-//  zone_id = "${aws_route53_zone.internal.zone_id}"
-//  name = "rancher"
-//  type = "CNAME"
-//  ttl = "5"
-//  records = [
-//    "${aws_route53_record.rancher-internal.fqdn}"
-//  ]
-//  depends_on = ["aws_route53_zone.internal"]
-//}
+resource "aws_route53_record" "rancher-internal" {
+  zone_id    = "${aws_route53_zone.internal.zone_id}"
+  name       = "rancher"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "${aws_route53_record.rancher-vpc.fqdn}" ]
+  depends_on = [ "aws_route53_zone.internal" ]
+}

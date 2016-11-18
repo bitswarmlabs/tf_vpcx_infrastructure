@@ -12,10 +12,13 @@ echo "## Installing minimal dependencies"
 [[ `which wget` ]] || $yum_install wget
 
 echo "## Setting hostname to ${hostname}.${domain}"
-DOMAIN=${domain}
-HOSTNAME=${hostname}
+DOMAIN='${domain}'
+HOSTNAME='${hostname}'
 
-IPV4=`curl -s http://169.254.169.254/latest/meta-data/private-ipv4`
+IPV4=$(curl -s http://169.254.169.254/latest/meta-data/private-ipv4)
+if [[ $? ]]; then
+  IPV4='127.0.0.1'
+fi
 
 # Set the host name
 hostname $HOSTNAME

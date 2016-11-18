@@ -214,8 +214,18 @@ resource "aws_route_table_association" "private_alternate" {
 /*
   DHCP Option Set
  */
-resource "aws_vpc_dhcp_options" "internal" {
+resource "aws_vpc_dhcp_options" "internal_region" {
   domain_name = "${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"
+  domain_name_servers = ["AmazonProvidedDNS"]
+  tags {
+    Name            = "${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"
+    vpc_environment = "${var.vpc_environment}"
+    provisioner     = "${var.provisioner}"
+  }
+}
+
+resource "aws_vpc_dhcp_options" "internal" {
+  domain_name = "infra.${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")} ${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"
   domain_name_servers = ["AmazonProvidedDNS"]
   tags {
     Name            = "${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"

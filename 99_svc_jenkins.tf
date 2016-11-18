@@ -3,7 +3,7 @@
 */
 resource "aws_iam_role" "jenkins" {
   name               = "jenkins"
-  path               = "/infrastructure/"
+  path               = "/${var.vpc_code}/"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -30,8 +30,8 @@ data "template_file" "jenkins_userdata" {
   template = "${file("${path.module}/templates/centos6-bootstrap-with-puppet.tpl")}"
 
   vars {
-    hostname = "jenkins"
-    domain   = "${aws_route53_zone.infrastructure.name}"
+    hostname     = "jenkins"
+    domain       = "${aws_route53_zone.internal_vpc.name}"
   }
 }
 
@@ -66,38 +66,20 @@ resource "aws_instance" "jenkins" {
   }
 }
 
-//resource "aws_eip" "jenkins" {
-//  instance = "${aws_instance.jenkins.id}"
-//  vpc = true
-//}
-
-resource "aws_route53_record" "jenkins-internal" {
-  zone_id    = "${aws_route53_zone.infrastructure.zone_id}"
+resource "aws_route53_record" "jenkins-vpc" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "jenkins"
   type       = "A"
   ttl        = "5"
   records    = [ "${aws_instance.jenkins.private_ip}" ]
-  depends_on = [ "aws_route53_zone.infrastructure" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-//resource "aws_route53_record" "jenkins-external" {
-//  zone_id = "${aws_route53_zone.external.zone_id}"
-//  name = "jenkins"
-//  type = "A"
-//  ttl = "5"
-//  records = [
-//    "${aws_eip.jenkins.public_ip}"
-//  ]
-//  depends_on = ["aws_route53_zone.external"]
-//}
-//
-//resource "aws_route53_record" "jenkins-cname" {
-//  zone_id = "${aws_route53_zone.internal.zone_id}"
-//  name = "jenkins"
-//  type = "CNAME"
-//  ttl = "5"
-//  records = [
-//    "${aws_route53_record.jenkins-internal.fqdn}"
-//  ]
-//  depends_on = ["aws_route53_zone.internal"]
-//}
+resource "aws_route53_record" "jenkins-internal" {
+  zone_id    = "${aws_route53_zone.internal.zone_id}"
+  name       = "jenkins"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "${aws_route53_record.jenkins-vpc.fqdn}" ]
+  depends_on = [ "aws_route53_zone.internal" ]
+}

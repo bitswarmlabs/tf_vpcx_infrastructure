@@ -3,7 +3,7 @@
 */
 resource "aws_iam_role" "puppetmasters" {
   name               = "puppetmasters"
-  path               = "/infrastructure/"
+  path               = "/${var.vpc_code}/"
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -31,8 +31,8 @@ data "template_file" "puppetserver_bootstrap_chunk_01" {
   template = "${file("${path.module}/templates/centos7-bootstrap-with-puppet.tpl")}"
 
   vars {
-    hostname = "puppet"
-    domain   = "${aws_route53_zone.infrastructure.name}"
+    hostname     = "puppet"
+    domain       = "${aws_route53_zone.internal_vpc.name}"
   }
 }
 
@@ -53,11 +53,6 @@ data "template_file" "puppetserver_bootstrap_chunk_02" {
 # Final blob to install puppet server
 data "template_file" "puppetserver_bootstrap_chunk_03" {
   template = "${file("${path.module}/templates/yum-puppetserver.tpl")}"
-
-  vars {
-    hostname = "puppet"
-    domain   = "${aws_route53_zone.infrastructure.name}"
-  }
 }
 
 # Joined
@@ -70,17 +65,17 @@ data "template_file" "puppetserver_userdata" {
 }
 
 resource "aws_instance" "puppet" {
-  depends_on              = [ "aws_iam_instance_profile.puppetmaster" ]
+  depends_on             = [ "aws_iam_instance_profile.puppetmaster" ]
   #ami                    = "${data.aws_ami.centos7_hvm.id}"
-  ami                     = "${lookup(var.baked_amis, "centos7.${var.aws_region}")}"
-  availability_zone       = "${var.private_subnet_az}"
-  instance_type           = "t2.medium"
-  key_name                = "${var.aws_key_name}"
-  user_data               = "${data.template_file.puppetserver_userdata.rendered}"
-  iam_instance_profile    = "${aws_iam_instance_profile.puppetmaster.name}"
-  vpc_security_group_ids  = [ "${aws_security_group.puppet.id}" ]
-  subnet_id               = "${aws_subnet.private_primary.id}"
-//  disable_api_termination = true
+  ami                    = "${lookup(var.baked_amis, "centos7.${var.aws_region}")}"
+  availability_zone      = "${var.private_subnet_az}"
+  instance_type          = "t2.medium"
+  key_name               = "${var.aws_key_name}"
+  user_data              = "${data.template_file.puppetserver_userdata.rendered}"
+  iam_instance_profile   = "${aws_iam_instance_profile.puppetmaster.name}"
+  vpc_security_group_ids = [ "${aws_security_group.puppet.id}" ]
+  subnet_id              = "${aws_subnet.private_primary.id}"
+  //  disable_api_termination = true
 
   tags {
     Name            = "Puppetmaster"
@@ -93,33 +88,21 @@ resource "aws_instance" "puppet" {
   }
 }
 
-resource "aws_route53_record" "puppet-internal" {
-  zone_id    = "${aws_route53_zone.infrastructure.zone_id}"
+resource "aws_route53_record" "puppet-vpc" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
   name       = "puppet"
   type       = "A"
   ttl        = "5"
   records    = [ "${aws_instance.puppet.private_ip}" ]
-  depends_on = [ "aws_route53_zone.infrastructure" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
-//resource "aws_route53_record" "puppet-external" {
-//  zone_id = "${aws_route53_zone.external.zone_id}"
-//  name = "puppet"
-//  type = "A"
-//  ttl = "5"
-//  records = [
-//    "${aws_eip.puppet.public_ip}"
-//  ]
-//  depends_on = ["aws_route53_zone.external"]
-//}
-//
-//resource "aws_route53_record" "puppet-cname" {
-//  zone_id = "${aws_route53_zone.internal.zone_id}"
-//  name = "puppet"
-//  type = "CNAME"
-//  ttl = "5"
-//  records = [
-//    "${aws_route53_record.puppet-internal.fqdn}"
-//  ]
-//  depends_on = ["aws_route53_zone.internal"]
-//}
+resource "aws_route53_record" "puppet-internal" {
+  zone_id    = "${aws_route53_zone.internal.zone_id}"
+  name       = "puppet"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "${aws_route53_record.puppet-vpc.fqdn}" ]
+  depends_on = [ "aws_route53_zone.internal" ]
+}
+
