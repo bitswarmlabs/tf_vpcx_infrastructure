@@ -29,7 +29,7 @@ resource "aws_iam_instance_profile" "bastion" {
 
 # Template for initial configuration bash script
 data "template_file" "bastion_userdata" {
-  template = "${file("${path.module}/scripts/centos7-bootstrap-with-puppet.tpl")}"
+  template = "${file("${path.module}/templates/centos7-bootstrap-with-puppet.tpl")}"
 
   vars {
     hostname = "bastion"
@@ -38,6 +38,7 @@ data "template_file" "bastion_userdata" {
 }
 
 resource "aws_instance" "bastion" {
+  depends_on = ["aws_iam_instance_profile.bastion"]
   ami = "${data.aws_ami.centos7_hvm.id}"
   availability_zone = "${var.public_subnet_az}"
   instance_type = "t2.micro"
@@ -71,8 +72,6 @@ resource "aws_instance" "bastion" {
     vpc_environment = "${var.vpc_environment}"
     provisioner = "${var.provisioner}"
   }
-
-  depends_on = ["aws_iam_instance_profile.bastion"]
 }
 
 resource "aws_eip" "bastion" {

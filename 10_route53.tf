@@ -1,13 +1,17 @@
-resource "aws_route53_zone" "root" {
-  name          = "${var.external_root_domain}."
+//resource "aws_route53_zone" "root" {
+//  name          = "${var.external_root_domain}."
+//
+//  tags {
+//    provisioner = "${var.provisioner}"
+//  }
+//
+//  lifecycle {
+//    prevent_destroy = true
+//  }
+//}
 
-  tags {
-    provisioner = "${var.provisioner}"
-  }
-
-  lifecycle {
-    prevent_destroy = true
-  }
+variable "route53_root_zone_id" {
+  default = "Z2QRK21AMVAH2M"
 }
 
 resource "aws_route53_zone" "external" {
@@ -21,7 +25,8 @@ resource "aws_route53_zone" "external" {
 
 resource "aws_route53_record" "external-ns" {
   name    = "${lookup(var.external_zones, "${var.vpc_environment}.${var.aws_region}")}"
-  zone_id = "${aws_route53_zone.root.zone_id}"
+//  zone_id = "${aws_route53_zone.root.zone_id}"
+  zone_id = "${var.route53_root_zone_id}"
   type    = "NS"
   ttl     = "30"
   records = [

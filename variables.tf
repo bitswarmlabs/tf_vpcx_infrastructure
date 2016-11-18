@@ -32,19 +32,34 @@ variable "private_subnet_az" {
   description = "Private subnet (primary) availability zone"
 }
 
+variable "private_subnet_az_alt" {
+  description = "Private subnet (alternate) availability zone"
+}
+
 variable "public_subnet_az" {
   description = "Public subnet (primary) availability zone"
 }
 
+variable "public_subnet_az_alt" {
+  description = "Public subnet (alternate) availability zone"
+}
+
+data "aws_availability_zones" "available" { }
+
 data "aws_availability_zone" "private_az" {
   name = "${var.private_subnet_az}"
+}
+
+data "aws_availability_zone" "private_az_alt" {
+  name = "${var.private_subnet_az_alt}"
 }
 
 data "aws_availability_zone" "public_az" {
   name = "${var.public_subnet_az}"
 }
 
-data "aws_availability_zones" "available" {
+data "aws_availability_zone" "public_az_alt" {
+  name = "${var.public_subnet_az_alt}"
 }
 
 # Finding the latest marketplace ami for CentOS 6 (x86_64) - with Updates (PV)
@@ -115,7 +130,7 @@ data "aws_ami" "nat_pv_ami" {
 
 # Better to use the Data providers as demonstrated above..
 variable "baked_amis" {
-  description = "Pre-baked AMIs by [type].[region]"
+  description = "Pre-baked AMIs by [type].[g]"
 
   default {
     # AWS baked PV NAT gateways amzn-ami-vpc-nat-pv-2015.03.0.x86_64-ebs
@@ -183,4 +198,42 @@ variable "az_numbers" {
     m = 13
     n = 14
   }
+}
+
+variable "puppetdb_name" {
+  default     = "puppetdb"
+  description = "puppetdb database name"
+}
+
+variable "puppetdb_user" {
+  default     = "puppetdb"
+  description = "puppetdb database user"
+}
+
+variable "puppetdb_pass" {
+  description = "puppetdb password, provide through your ENV variables"
+}
+
+variable "puppetdb_storage_size" {
+  default     = "10"
+  description = "puppetdb storage size in GB"
+}
+
+variable "rancherdb_name" {
+  default     = "rancher"
+  description = "rancher database name"
+}
+
+variable "rancherdb_user" {
+  default     = "rancher"
+  description = "rancher database user"
+}
+
+variable "rancherdb_pass" {
+  description = "rancher database password, provide through your ENV variables"
+}
+
+variable "rancherdb_storage_size" {
+  default     = "1"
+  description = "rancher database storage size in GB"
 }

@@ -27,7 +27,7 @@ resource "aws_iam_instance_profile" "jenkins" {
 
 # Template for initial configuration bash script
 data "template_file" "jenkins_userdata" {
-  template = "${file("${path.module}/scripts/centos6-bootstrap-with-puppet.tpl")}"
+  template = "${file("${path.module}/templates/centos6-bootstrap-with-puppet.tpl")}"
 
   vars {
     hostname = "jenkins"
@@ -36,6 +36,7 @@ data "template_file" "jenkins_userdata" {
 }
 
 resource "aws_instance" "jenkins" {
+  depends_on             = [ "aws_iam_instance_profile.jenkins" ]
   ami                    = "${data.aws_ami.centos7_hvm.id}"
   //ami = "${lookup(var.baked_amis, "centos7.${var.aws_region}")}"
   availability_zone      = "${var.private_subnet_az}"
@@ -63,8 +64,6 @@ resource "aws_instance" "jenkins" {
     volume_type           = "gp2"
     delete_on_termination = false
   }
-
-  depends_on             = [ "aws_iam_instance_profile.jenkins" ]
 }
 
 //resource "aws_eip" "jenkins" {

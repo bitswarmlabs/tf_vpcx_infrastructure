@@ -26,8 +26,9 @@ resource "aws_internet_gateway" "default" {
   }
 }
 
+
 /*
-  NAT Instance
+  NAT Gateway Instance
 */
 resource "aws_instance" "nat" {
   # pinned to latest AMI available:
@@ -57,7 +58,7 @@ resource "aws_eip" "nat" {
 
 
 /*
-  Public Subnet
+  Public Primary Subnet
 */
 resource "aws_subnet" "public_primary" {
   vpc_id            = "${aws_vpc.default.id}"
@@ -66,7 +67,7 @@ resource "aws_subnet" "public_primary" {
   availability_zone = "${var.public_subnet_az}"
 
   tags              = {
-    Name            = "${var.vpc_name} public subnet"
+    Name            = "${var.vpc_name} public subnet (primary)"
     group           = "${var.vpc_name}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
@@ -82,7 +83,7 @@ resource "aws_route_table" "public_primary" {
   }
 
   tags {
-    Name            = "${var.vpc_name} public routes"
+    Name            = "${var.vpc_name} public (primary) routes"
     group           = "${var.vpc_name}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
@@ -94,8 +95,48 @@ resource "aws_route_table_association" "public_primary" {
   route_table_id = "${aws_route_table.public_primary.id}"
 }
 
+
 /*
-  Private Subnet
+  Public Alternate Subnet
+ */
+resource "aws_subnet" "public_alternate" {
+  vpc_id            = "${aws_vpc.default.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.default.cidr_block, 4, lookup(var.az_numbers, data.aws_availability_zone.public_az_alt.name_suffix))}"
+  availability_zone = "${var.public_subnet_az_alt}"
+
+  tags              = {
+    Name            = "${var.vpc_name} public subnet (alternate)"
+    group           = "${var.vpc_name}"
+    vpc_environment = "${var.vpc_environment}"
+    provisioner     = "${var.provisioner}"
+  }
+}
+
+resource "aws_route_table" "public_alternate" {
+  vpc_id = "${aws_vpc.default.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.default.id}"
+  }
+
+  tags {
+    Name            = "${var.vpc_name} public (alternate) routes"
+    group           = "${var.vpc_name}"
+    vpc_environment = "${var.vpc_environment}"
+    provisioner     = "${var.provisioner}"
+  }
+}
+
+resource "aws_route_table_association" "public_alternate" {
+  subnet_id      = "${aws_subnet.public_alternate.id}"
+  route_table_id = "${aws_route_table.public_alternate.id}"
+}
+
+
+/*
+  Private Primary Subnet
 */
 resource "aws_subnet" "private_primary" {
   vpc_id            = "${aws_vpc.default.id}"
@@ -104,7 +145,7 @@ resource "aws_subnet" "private_primary" {
   availability_zone = "${var.private_subnet_az}"
 
   tags {
-    Name            = "${var.vpc_name} private subnet"
+    Name            = "${var.vpc_name} private subnet (primary)"
     group           = "${var.vpc_name}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
@@ -120,12 +161,11 @@ resource "aws_route_table" "private_primary" {
   }
 
   tags {
-    Name            = "${var.vpc_name} private subnet"
+    Name            = "${var.vpc_name} private (primary) routes"
     group           = "${var.vpc_name}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
   }
-
 }
 
 resource "aws_route_table_association" "private_primary" {
@@ -133,8 +173,50 @@ resource "aws_route_table_association" "private_primary" {
   route_table_id = "${aws_route_table.private_primary.id}"
 }
 
+/*
+  Private Alternate Subnet
+ */
+resource "aws_subnet" "private_alternate" {
+  vpc_id            = "${aws_vpc.default.id}"
+
+  cidr_block        = "${cidrsubnet(aws_vpc.default.cidr_block, 4, lookup(var.az_numbers, data.aws_availability_zone.private_az_alt.name_suffix))}"
+  availability_zone = "${var.private_subnet_az_alt}"
+
+  tags {
+    Name            = "${var.vpc_name} private subnet (alternate)"
+    group           = "${var.vpc_name}"
+    vpc_environment = "${var.vpc_environment}"
+    provisioner     = "${var.provisioner}"
+  }
+}
+
+resource "aws_route_table" "private_alternate" {
+  vpc_id = "${aws_vpc.default.id}"
+
+  route {
+    cidr_block  = "0.0.0.0/0"
+    instance_id = "${aws_instance.nat.id}"
+  }
+
+  tags {
+    Name            = "${var.vpc_name} private (alternate) routes"
+    group           = "${var.vpc_name}"
+    vpc_environment = "${var.vpc_environment}"
+    provisioner     = "${var.provisioner}"
+  }
+}
+
+resource "aws_route_table_association" "private_alternate" {
+  subnet_id      = "${aws_subnet.private_alternate.id}"
+  route_table_id = "${aws_route_table.private_alternate.id}"
+}
+
+/*
+  DHCP Option Set
+ */
 resource "aws_vpc_dhcp_options" "internal" {
   domain_name = "${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"
+  domain_name_servers = ["AmazonProvidedDNS"]
   tags {
     Name            = "${lookup(var.internal_zones, "${var.vpc_environment}.${var.aws_region}")}"
     vpc_environment = "${var.vpc_environment}"

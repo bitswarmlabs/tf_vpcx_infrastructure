@@ -26,8 +26,8 @@ resource "aws_iam_instance_profile" "rancher" {
 }
 
 # Template for initial configuration bash script
-data "template_file" "rancher_userdata" {
-  template = "${file("${path.module}/scripts/ubuntu-bootstrap-with-puppet.tpl")}"
+data "template_file" "rancher_bootstrap_chunk_01" {
+  template = "${file("${path.module}/templates/ubuntu-bootstrap-with-puppet.tpl")}"
 
   vars {
     hostname = "rancher"
@@ -35,7 +35,31 @@ data "template_file" "rancher_userdata" {
   }
 }
 
+# Extra blob to install puppet server
+data "template_file" "rancher_bootstrap_chunk_02" {
+  template = "${file("${path.module}/templates/rancherdb-facts.tpl")}"
+
+  vars {
+    rancherdb_endpoint = "${aws_db_instance.rancherdb.endpoint}"
+    rancherdb_host     = "${aws_db_instance.rancherdb.address}"
+    rancherdb_port     = "${aws_db_instance.rancherdb.port}"
+    rancherdb_name     = "${aws_db_instance.rancherdb.name}"
+    rancherdb_user     = "${aws_db_instance.rancherdb.username}"
+    rancherdb_pass     = "${aws_db_instance.rancherdb.password}"
+  }
+}
+
+# Joined
+data "template_file" "rancher_userdata" {
+  template = "$${chunks}"
+
+  vars {
+    chunks = "${join("\n", list(data.template_file.rancher_bootstrap_chunk_01.rendered, data.template_file.rancher_bootstrap_chunk_02.rendered))}"
+  }
+}
+
 resource "aws_instance" "rancher" {
+  depends_on             = [ "aws_iam_instance_profile.rancher" ]
   ami                    = "${data.aws_ami.ubuntu_trusty_hvm.id}"
   //ami = "${lookup(var.baked_amis, "centos7.${var.aws_region}")}"
   availability_zone      = "${var.private_subnet_az}"
@@ -47,17 +71,15 @@ resource "aws_instance" "rancher" {
 
   subnet_id              = "${aws_subnet.private_primary.id}"
 
-  tags                   = {
+  tags {
     Name            = "Rancher"
     group           = "${var.vpc_name}"
-    profile         = "docker"
-    role            = "rancher"
+    profile         = "rancher"
+    role            = "rancherserver"
     vpc_id          = "${aws_vpc.default.id}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
   }
-
-  depends_on             = [ "aws_iam_instance_profile.rancher" ]
 }
 
 //resource "aws_eip" "rancher" {

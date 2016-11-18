@@ -1,11 +1,20 @@
 #!/bin/bash
+yum_install='yum install -y'
 
+mkdir -p /usr/local/bin
+mkdir -p /usr/local/sbin
+
+mkdir -p /root/.ssh
+chmod 700 /root/.ssh
+
+echo "## Installing minimal dependencies"
+[[ `which curl` ]] || $yum_install curl
+[[ `which wget` ]] || $yum_install wget
 
 echo "## Setting hostname to ${hostname}.${domain}"
 DOMAIN=${domain}
 HOSTNAME=${hostname}
 
-[[ `which curl` ]] || yum install -y curl
 IPV4=`curl -s http://169.254.169.254/latest/meta-data/private-ipv4`
 
 # Set the host name
@@ -35,8 +44,21 @@ ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 EOF
 
-echo "## Installing Puppet Agent"
-rpm -Uvh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
-yum install -y puppet-agent
+echo "## Installing Puppet (agent)"
 
-/opt/puppetlabs/bin/puppet resource service puppet ensure=running enable=true
+# configure the puppet package sources
+# see: http://docs.puppetlabs.com/guides/puppetlabs_package_repositories.html
+rpm -Uvh https://yum.puppetlabs.com/puppetlabs-release-pc1-el-7.noarch.rpm
+
+# install puppet
+$yum_install puppet-agent
+
+echo "## Creating symlink for Puppet binaries in /usr/bin"
+for f in $(find /opt/puppetlabs/bin -type l -or -type f); do
+ln -svf $(readlink -f "$f") /usr/bin/$(basename "$f")
+done
+
+echo "## Puppet executable $(which puppet) version $(puppet --version)"
+
+echo "## Activating Puppet Agent service"
+puppet resource service puppet ensure=running enable=true
