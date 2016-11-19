@@ -60,10 +60,13 @@ echo "## Setting hostname to ${hostname}.${domain}"
 DOMAIN='${domain}'
 HOSTNAME='${hostname}'
 
-IPV4=$(curl -s http://169.254.169.254/latest/meta-data/private-ipv4)
-if [[ $? ]]; then
+set -x
+IPV4=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+set +x
+if [ $? -ne 0 ]; then
   IPV4='127.0.0.1'
 fi
+
 
 # Set the host name
 hostname $HOSTNAME
@@ -91,6 +94,9 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 EOF
+
+echo "## /etc/hosts now reads:"
+cat /etc/hosts
 
 echo "## Installing Puppet (agent)"
 

@@ -73,7 +73,7 @@ resource "aws_instance" "puppet" {
   key_name               = "${var.aws_key_name}"
   user_data              = "${data.template_file.puppetserver_userdata.rendered}"
   iam_instance_profile   = "${aws_iam_instance_profile.puppetmaster.name}"
-  vpc_security_group_ids = [ "${aws_security_group.puppet.id}" ]
+  vpc_security_group_ids = [ "${aws_default_security_group.default.id}", "${aws_security_group.puppet.id}" ]
   subnet_id              = "${aws_subnet.private_primary.id}"
   //  disable_api_termination = true
 
@@ -97,6 +97,15 @@ resource "aws_route53_record" "puppet_vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
+resource "aws_route53_record" "puppet_vpc_ip_cname" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
+  name       = "ip-${replace("${aws_instance.puppet.private_ip}", ".", "-")}"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "ip-${replace("${aws_instance.puppet.private_ip}", ".", "-")}.${lookup(var.ec2_internal_zones, var.aws_region)}" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
+}
+
 resource "aws_route53_record" "puppet_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "puppet"
@@ -106,3 +115,11 @@ resource "aws_route53_record" "puppet_internal" {
   depends_on = [ "aws_route53_zone.internal" ]
 }
 
+resource "aws_route53_record" "puppet_internal_ip_cname" {
+  zone_id    = "${aws_route53_zone.internal.zone_id}"
+  name       = "ip-${replace("${aws_instance.puppet.private_ip}", ".", "-")}"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "ip-${replace("${aws_instance.puppet.private_ip}", ".", "-")}.${lookup(var.ec2_internal_zones, var.aws_region)}" ]
+  depends_on = [ "aws_route53_zone.internal" ]
+}

@@ -1,101 +1,60 @@
-//resource "aws_security_group" "default" {
-//  name        = "default"
-//  description = "Default VPC security group"
-//  vpc_id      = "${aws_vpc.default.id}"
-//
-//  ingress {
-//    from_port = 0
-//    to_port = 0
-//    protocol = "-1"
-//    self =true
-//  }
-//
-//  egress {
-//    from_port = 0
-//    to_port = 0
-//    protocol = "-1"
-//    cidr_blocks = ["0.0.0.0/0"]
-//  }
-//
-//  tags {
-//    Name            = "Default"
-//    group           = "${var.vpc_name}"
-//    vpc_id          = "${aws_vpc.default.id}"
-//    vpc_environment = "${var.vpc_environment}"
-//    provisioner     = "${var.provisioner}"
-//  }
-//}
-
-resource "aws_security_group" "nat" {
-  name        = "vpc_nat"
-  description = "Allow traffic to pass from the private subnet to the internet"
+resource "aws_default_security_group" "default" {
   vpc_id      = "${aws_vpc.default.id}"
 
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [ "${aws_subnet.private_primary.cidr_block}" ]
-  }
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [ "${aws_subnet.private_primary.cidr_block}" ]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-  }
-
-  ingress {
-    from_port   = -1
-    to_port     = -1
-    protocol    = "icmp"
-    cidr_blocks = [ "0.0.0.0/0" ]
+    from_port = 0
+    to_port   = 0
+    protocol  = -1
+    self      = true
   }
 
   egress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-  }
-
-  egress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [ "0.0.0.0/0" ]
-  }
-
-  egress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
+    from_port   = 0
+    to_port     = 0
+    protocol    = -1
     cidr_blocks = [ "${var.vpc_cidr_base}" ]
   }
 
   egress {
-    from_port   = -1
-    to_port     = -1
-    protocol    = "icmp"
-    cidr_blocks = [ "0.0.0.0/0" ]
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [ "${aws_security_group.puppet.id}" ]
   }
 
+  egress {
+    from_port       = 8140
+    to_port         = 8140
+    protocol        = "tcp"
+    security_groups = [ "${aws_security_group.puppet.id}" ]
+  }
+
+  egress {
+    from_port       = 8142
+    to_port         = 8142
+    protocol        = "tcp"
+    security_groups = [ "${aws_security_group.puppet.id}" ]
+  }
+
+  egress {
+    from_port       = 61613
+    to_port         = 61613
+    protocol        = "tcp"
+    security_groups = [ "${aws_security_group.puppet.id}" ]
+  }
+
+//  lifecycle {
+//    ignore_changes  = [ "name", "description" ]
+//  }
+
   tags {
-    Name            = "NAT Gateway SG"
+    Name            = "default"
     group           = "${var.vpc_name}"
     vpc_id          = "${aws_vpc.default.id}"
     vpc_environment = "${var.vpc_environment}"
     provisioner     = "${var.provisioner}"
   }
 }
-
 
 resource "aws_security_group" "bastion" {
   name        = "vpc_bastion"
@@ -163,6 +122,13 @@ resource "aws_security_group" "puppet" {
   vpc_id      = "${aws_vpc.default.id}"
 
   ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -205,20 +171,6 @@ resource "aws_security_group" "puppet" {
   }
 
   ingress {
-    from_port   = 61613
-    to_port     = 61613
-    protocol    = "tcp"
-    cidr_blocks = [ "${var.vpc_cidr_base}" ]
-  }
-
-  ingress {
-    from_port   = 61616
-    to_port     = 61616
-    protocol    = "tcp"
-    cidr_blocks = [ "${var.vpc_cidr_base}" ]
-  }
-
-  ingress {
     from_port   = 8140
     to_port     = 8143
     protocol    = "tcp"
@@ -237,6 +189,27 @@ resource "aws_security_group" "puppet" {
     to_port     = 4433
     protocol    = "tcp"
     cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  ingress {
+    from_port   = 61613
+    to_port     = 61613
+    protocol    = "tcp"
+    cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  ingress {
+    from_port   = 61616
+    to_port     = 61616
+    protocol    = "tcp"
+    cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  egress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = [ "0.0.0.0/0" ]
   }
 
   egress {
@@ -277,6 +250,13 @@ resource "aws_security_group" "jenkins" {
   description = "Security group for public-facing Jenkins"
 
   ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -298,11 +278,18 @@ resource "aws_security_group" "jenkins" {
   }
 
   egress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [ "${aws_subnet.private_primary.cidr_block}", "${var.vpc_cidr_base}" ]
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = [ "0.0.0.0/0" ]
   }
+  //
+  //  egress {
+  //    from_port   = 22
+  //    to_port     = 22
+  //    protocol    = "tcp"
+  //    cidr_blocks = [ "${aws_subnet.private_primary.cidr_block}", "${var.vpc_cidr_base}" ]
+  //  }
 
   egress {
     from_port   = 80
@@ -337,6 +324,13 @@ resource "aws_security_group" "rancher" {
   description = "Security group for internal Rancher servers"
 
   ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = [ "${var.vpc_cidr_base}" ]
+  }
+
+  ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
@@ -354,6 +348,13 @@ resource "aws_security_group" "rancher" {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
+    cidr_blocks = [ "0.0.0.0/0" ]
+  }
+
+  egress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
     cidr_blocks = [ "0.0.0.0/0" ]
   }
 

@@ -30,8 +30,8 @@ data "template_file" "bastion_userdata" {
   template = "${file("${path.module}/templates/centos7-bootstrap-with-puppet.tpl")}"
 
   vars {
-    hostname     = "bastion"
-    domain       = "${aws_route53_zone.internal_vpc.name}"
+    hostname = "bastion"
+    domain   = "${aws_route53_zone.internal_vpc.name}"
   }
 }
 
@@ -43,7 +43,7 @@ resource "aws_instance" "bastion" {
   key_name                    = "${var.aws_key_name}"
   user_data                   = "${data.template_file.bastion_userdata.rendered}"
   iam_instance_profile        = "${aws_iam_instance_profile.bastion.name}"
-  vpc_security_group_ids      = [ "${aws_security_group.bastion.id}" ]
+  vpc_security_group_ids      = [ "${aws_default_security_group.default.id}", "${aws_security_group.bastion.id}" ]
 
   subnet_id                   = "${aws_subnet.public_primary.id}"
   associate_public_ip_address = true
@@ -84,12 +84,30 @@ resource "aws_route53_record" "bastion_vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
+resource "aws_route53_record" "bastion_vpc_ip_cname" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
+  name       = "ip-${replace("${aws_instance.bastion.private_ip}", ".", "-")}"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "ip-${replace("${aws_instance.bastion.private_ip}", ".", "-")}.${lookup(var.ec2_internal_zones, var.aws_region)}" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
+}
+
 resource "aws_route53_record" "bastion_internal" {
   zone_id    = "${aws_route53_zone.internal.zone_id}"
   name       = "bastion"
   type       = "CNAME"
   ttl        = "5"
   records    = [ "${aws_route53_record.bastion_vpc.fqdn}" ]
+  depends_on = [ "aws_route53_zone.internal" ]
+}
+
+resource "aws_route53_record" "bastion_internal_ip_cname" {
+  zone_id    = "${aws_route53_zone.internal.zone_id}"
+  name       = "ip-${replace("${aws_instance.bastion.private_ip}", ".", "-")}"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "ip-${replace("${aws_instance.bastion.private_ip}", ".", "-")}.${lookup(var.ec2_internal_zones, var.aws_region)}" ]
   depends_on = [ "aws_route53_zone.internal" ]
 }
 

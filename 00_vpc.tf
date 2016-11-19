@@ -54,6 +54,15 @@ resource "aws_route53_record" "natgw_vpc" {
   depends_on = [ "aws_route53_zone.internal_vpc" ]
 }
 
+resource "aws_route53_record" "natgw_vpc_ip_cname" {
+  zone_id    = "${aws_route53_zone.internal_vpc.zone_id}"
+  name       = "ip-${replace("${aws_nat_gateway.gw.private_ip}", ".", "-")}"
+  type       = "CNAME"
+  ttl        = "5"
+  records    = [ "ip-${replace("${aws_nat_gateway.gw.private_ip}", ".", "-")}.${lookup(var.ec2_internal_zones, var.aws_region)}" ]
+  depends_on = [ "aws_route53_zone.internal_vpc" ]
+}
+
 resource "aws_route53_record" "natgw_external" {
   zone_id    = "${aws_route53_zone.external.zone_id}"
   name       = "${var.vpc_code}-gw"
@@ -62,6 +71,7 @@ resource "aws_route53_record" "natgw_external" {
   records    = [ "${aws_nat_gateway.gw.public_ip}" ]
   depends_on = [ "aws_route53_zone.external" ]
 }
+
 
 
 //Formerly:

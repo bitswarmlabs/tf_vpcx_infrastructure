@@ -52,7 +52,8 @@ variable "public_subnet_az_alt" {
   description = "Public subnet (alternate) availability zone"
 }
 
-data "aws_availability_zones" "available" { }
+data "aws_availability_zones" "available" {
+}
 
 data "aws_availability_zone" "private_az" {
   name = "${var.private_subnet_az}"
@@ -177,6 +178,24 @@ variable "internal_zones" {
     staging.us-west-1     = "stg-us-west-1.bitswarm.internal"
     production.us-east-1  = "us-east-1.bitswarm.internal"
     production.us-west-1  = "us-west-1.bitswarm.internal"
+  }
+}
+
+variable "ec2_internal_zones" {
+  description = "Map of internal EC2 Route53 zone names by region"
+  default {
+    us-east-1      = "ec2.internal"
+    us-east-2      = "us-east-2.compute.internal"
+    us-west-1      = "us-west-1.compute.internal"
+    us-west-2      = "us-west-2.compute.internal"
+    eu-west-1      = "eu-west-1.compute.internal"
+    eu-central-1   = "eu-central-1.compute.internal"
+    sa-east-1      = "sa-east-1.compute.internal"
+    ap-northeast-1 = "ap-northeast-1.compute.internal"
+    ap-northeast-1 = "ap-northeast-2.compute.internal"
+    ap-southeast-1 = "ap-southeast-1.compute.internal"
+    ap-southeast-2 = "ap-southeast-2.compute.internal"
+    ap-south-1     = "ap-south-1.compute.internal"
   }
 }
 
